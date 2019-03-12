@@ -7,6 +7,7 @@ import json
 from queue import Queue
 import threading
 import time
+import argparse
 from annotator import Annotator
 
 
@@ -128,8 +129,17 @@ def update_gui(rx_queue, pm):
             pm.update(param[1], param[0], msg[param[1]])
 
 
-if __name__ == '__main__':
-    config = json.load(open('config.json'))
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config', help="Configuration JSON file")
+    args = parser.parse_args()
+
+    try:
+        config = json.load(open(args.config))
+    except FileNotFoundError:
+        print('Unable to open "{}"'.format(args.config))
+        return
+
     rx_queue = Queue()
 
     args = ('127.0.0.1', 65432, rx_queue)
@@ -160,3 +170,7 @@ if __name__ == '__main__':
 
     win.show()
     app.exec_()
+
+
+if __name__ == '__main__':
+    main()
