@@ -1,0 +1,8 @@
+{
+  "annotators": [
+    {
+      "param": "go_around",
+      "match_value": true
+    }
+  ]
+}
