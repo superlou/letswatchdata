@@ -51,9 +51,21 @@ class ParamManager:
         self.annotators = {a['param']: Annotator(a['param'], a)
                             for a in config.get('annotators', [])}
 
+        self.auto_pens = [
+            pg.mkPen('#f00'),
+            pg.mkPen('#0f0'),
+            pg.mkPen('#00f'),
+            pg.mkPen('#AA0'),
+            pg.mkPen('#0AA'),
+            pg.mkPen('#A0A'),
+        ]
+
         self.initialize_plots(config)
 
     def initialize_plots(self, config):
+        pg.setConfigOption('background', 'w')
+        pg.setConfigOption('foreground', 'k')
+
         # Create 1 dock for each plot
         for plot in config.get('plots', []):
             dock_name = ', '.join(plot.get('parameters', []))
@@ -72,6 +84,7 @@ class ParamManager:
             plot_widget.showGrid(True, True, 0.4)
             dock.addWidget(plot_widget)
             self.plot_widget_items.append(plot_widget)
+            plot_widget.addLegend()
 
             # Link all plot x-axes to the first plot
             plot_widget.setXLink(self.xlink)
@@ -79,10 +92,11 @@ class ParamManager:
                 self.xlink = plot_widget.getPlotItem()
 
             # Create curve for each parameter in a plot
-            for parameter_name in plot.get('parameters', []):
-                curve = plot_widget.plot('r', x=[], y=[])
+            for i, parameter_name in enumerate(plot.get('parameters', [])):
+                curve = plot_widget.plot('r', x=[], y=[], name=parameter_name)
                 curve.parent = plot_widget  # todo Hacky
                 self.curves[parameter_name] = curve
+                curve.setPen(self.auto_pens[i % len(self.auto_pens)])
 
 
     def update(self, parameter_name, time, value):

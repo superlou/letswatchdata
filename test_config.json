@@ -1,7 +1,7 @@
 {
   "plots": [
     {
-      "parameters": ["alpha", "bravo"]
+      "parameters": ["alpha", "bravo", "echo"]
     },
     {
       "parameters": ["delta"]

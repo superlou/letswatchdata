@@ -2,6 +2,7 @@ import time
 import socket
 import json
 import random
+import numpy as np
 
 
 def send_data(host, port):
@@ -16,17 +17,17 @@ def send_data(host, port):
             t += dt
             data = {
                 't': t,
-                'alpha': random.random(),
-                'bravo': random.random(),
-                'charlie': random.random() < 0.001,
+                'alpha': np.sin(2 * np.pi * 0.14 * t),
+                'bravo': np.sin(2 * np.pi * 0.14 * t) + random.random() / 10.0,
+                'charlie': random.random() < 0.0002,
                 'delta': random.random(),
+                'echo': np.sin(2 * np.pi * 0.2 * t)
             }
 
             b = json.dumps(data) + '\n'
             sock.sendall(b.encode('utf-8'))
 
             time.sleep(dt)
-
 
 
 if __name__ == '__main__':
