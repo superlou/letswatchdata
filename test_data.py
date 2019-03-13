@@ -16,8 +16,10 @@ def send_data(host, port):
             t += dt
             data = {
                 't': t,
-                'sre': random.random(),
-                'go_around': random.random() < 0.002,
+                'alpha': random.random(),
+                'bravo': random.random(),
+                'charlie': random.random() < 0.001,
+                'delta': random.random(),
             }
 
             b = json.dumps(data) + '\n'

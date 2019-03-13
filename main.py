@@ -9,6 +9,7 @@ import threading
 import time
 import argparse
 from annotator import Annotator
+from parameter import Parameter, ParameterDB
 
 
 def socket_listener(host, port, rx_queue):
@@ -39,84 +40,85 @@ def socket_listener(host, port, rx_queue):
 class ParamManager:
     def __init__(self, dock_area, params_tree, config):
         self.dock_area = dock_area
-        self.params = {}    # [Param, Plot, Curve, QTreeWidgetItem]
+        self.db = ParameterDB()
+        self.curves = {}
+        self.qtree_widget_items = {}
+        self.plot_widget_items = []
+        # self.params = {}    # [Parameter, Plot, Curve, QTreeWidgetItem]
         self.params_tree = params_tree
         self.last_dock_added = None
         self.xlink = None
         self.annotators = {a['param']: Annotator(a['param'], a)
                             for a in config.get('annotators', [])}
 
-    def update(self, param_name, time, value):
-        try:
-            param = self.params[param_name]
-        except KeyError:
-            param = self.create_param(param_name, value)
+        self.initialize_plots(config)
 
-        # Update parameter history
-        param[0].update(time, value)
-
-        # Update parameter curve
-        if param[2]:
-            param[2].setData(param[0].t_series, param[0].v_series)
-
-        # Update value in parameter tree
-        param[3].setData(1, QtCore.Qt.DisplayRole, value)
-
-        # Add arrows if annotation event occurs
-        if param_name in self.annotators:
-            annotator = self.annotators[param_name]
-            if annotator.matches(param[0]):
-                for p in [p for n, p in self.params.items() if p[1]]:
-                    param, plot, curve, item = p
-                    arrow = pg.ArrowItem()
-                    arrow.setPos(time, param.v_series[-1])
-                    plot.addItem(arrow)
-
-    def create_param(self, param_name, value):
-        if isinstance(value, (int, float)):
-            dock = Dock(param_name, closable=True)
+    def initialize_plots(self, config):
+        # Create 1 dock for each plot
+        for plot in config.get('plots', []):
+            dock_name = ', '.join(plot.get('parameters', []))
+            dock = Dock(dock_name, closable=False)
 
             if self.last_dock_added:
+                # Position under the previous dock
                 self.dock_area.addDock(dock, 'bottom', self.last_dock_added)
             else:
+                # Position to the right of the tree
                 self.dock_area.addDock(dock, 'right')
 
             self.last_dock_added = dock
 
-            plot = pg.PlotWidget(title=param_name)
-            plot.setXLink(self.xlink)
+            plot_widget = pg.PlotWidget(title=dock_name)
+            plot_widget.showGrid(True, True, 0.4)
+            dock.addWidget(plot_widget)
+            self.plot_widget_items.append(plot_widget)
 
+            # Link all plot x-axes to the first plot
+            plot_widget.setXLink(self.xlink)
             if self.xlink is None:
-                self.xlink = plot.getPlotItem()
+                self.xlink = plot_widget.getPlotItem()
 
-            dock.addWidget(plot)
-            plot.showGrid(True, True, 0.4)
-
-            curve = plot.plot('r', x=[], y=[])
-        else:
-            plot = None
-            curve = None
-
-        param = Param(param_name)
-        tree_widget_item = QtGui.QTreeWidgetItem([param_name])
-        self.params_tree.addTopLevelItem(tree_widget_item)
-
-        self.params[param_name] = [param, plot, curve, tree_widget_item]
-        return self.params[param_name]
+            # Create curve for each parameter in a plot
+            for parameter_name in plot.get('parameters', []):
+                curve = plot_widget.plot('r', x=[], y=[])
+                curve.parent = plot_widget  # todo Hacky
+                self.curves[parameter_name] = curve
 
 
-class Param:
-    def __init__(self, name):
-        self.name = name
-        self.t_series = []
-        self.v_series = []
+    def update(self, parameter_name, time, value):
+        try:
+            parameter = self.db.get(parameter_name)
+        except KeyError:
+            parameter = self.db.create(parameter_name)
 
-    def update(self, time, value):
-        if isinstance(value, bool):
-            value = int(value)
+        # Update parameter history
+        parameter.update(time, value)
 
-        self.t_series.append(time)
-        self.v_series.append(value)
+        # Update parameter curve
+        if parameter_name in self.curves:
+            curve = self.curves[parameter_name]
+            curve.setData(parameter.t_series, parameter.v_series)
+            curve.parameter = parameter     # todo This is hacky
+
+        # Update value in parameter tree
+        if not parameter_name in self.qtree_widget_items:
+            item = QtGui.QTreeWidgetItem([parameter_name])
+            self.params_tree.addTopLevelItem(item)
+            self.qtree_widget_items[parameter_name] = item
+
+        item = self.qtree_widget_items[parameter_name]
+        item.setData(1, QtCore.Qt.DisplayRole, value)
+
+        # Add arrows if annotation event occurs
+        # todo This is slow and hacky
+        if parameter_name in self.annotators:
+            annotator = self.annotators[parameter_name]
+            if annotator.matches(parameter):
+                for parameter_name, curve in self.curves.items():
+                    parameter = self.db.get(parameter_name)
+                    arrow = pg.ArrowItem()
+                    arrow.setPos(time, parameter.v_series[-1])
+                    curve.parent.addItem(arrow)
 
 
 def update_gui(rx_queue, pm):

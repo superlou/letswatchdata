@@ -1,0 +1,18 @@
+{
+  "plots": [
+    {
+      "parameters": ["alpha", "bravo"]
+    },
+    {
+      "parameters": ["delta"]
+    }
+  ],
+
+  "annotators": [
+    {
+      "param": "charlie",
+      "type": "edge",
+      "match_value": true
+    }
+  ]
+}
