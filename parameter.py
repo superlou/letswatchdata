@@ -3,13 +3,32 @@ class Parameter:
         self.name = name
         self.t_series = []
         self.v_series = []
+        self.last_was_same = False
 
     def update(self, time, value):
         if isinstance(value, bool):
             value = int(value)
 
-        self.t_series.append(time)
-        self.v_series.append(value)
+        # Don't save identical values
+        if len(self.v_series) > 0 and self.v_series[-1] == value:
+            if not self.last_was_same:
+                # The first time we have an identical value, create a point
+                self.t_series.append(time)
+                self.v_series.append(value)
+            else:
+                # Otherwise, simply move the dummy point farther out in time
+                self.t_series[-1] = time
+
+            self.last_was_same = True
+        else:
+            self.t_series.append(time)
+            self.v_series.append(value)
+
+            self.last_was_same = False
+
+        # if not self.last_was_same:
+        #     self.t_series.append(time)
+        #     self.v_series.append(value)
 
     def points(self):
         return list(zip(self.t_series, self.v_series))

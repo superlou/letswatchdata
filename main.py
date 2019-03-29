@@ -23,7 +23,7 @@ def socket_listener(host, port, rx_queue):
             print('Connected to {}'.format(addr))
 
             while True:
-                data = conn.recv(1024).strip()
+                data = conn.recv(100000).strip()
                 tokens = data.split(b'\n')
 
                 for token in tokens:
@@ -34,7 +34,7 @@ def socket_listener(host, port, rx_queue):
                     except json.decoder.JSONDecodeError:
                         print('Error decoding json: {}'.format(str))
 
-                time.sleep(0.01)
+                time.sleep(0.05)
 
 
 class ParamManager:
@@ -167,7 +167,7 @@ def main():
     pg.setConfigOptions(antialias=True)
 
     win = QtGui.QMainWindow()
-    win.setWindowTitle('SocketPlot')
+    win.setWindowTitle("Let's Watch Data")
 
     area = DockArea()
     win.setCentralWidget(area)
