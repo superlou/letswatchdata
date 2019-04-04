@@ -10,6 +10,7 @@ import time
 import argparse
 from annotator import Annotator
 from parameter import Parameter, ParameterDB
+import psutil
 
 
 def socket_listener(host, port, rx_queue):
@@ -145,6 +146,11 @@ def update_gui(rx_queue, pm):
             pm.update(param[1], param[0], msg[param[1]])
 
 
+def update_controls(memory_bar):
+    memory = psutil.virtual_memory()
+    memory_bar.setValue(memory.percent)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help="Configuration JSON file")
@@ -177,6 +183,18 @@ def main():
     params_tree = pg.TreeWidget()
     params_tree.setColumnCount(2)
     params_tree_dock.addWidget(params_tree)
+
+
+    memory_bar = QtGui.QProgressBar()
+    memory_bar.setGeometry(0, 0, 300, 25)
+    memory_bar.setMaximum(100)
+    memory_bar.setValue(0)
+    status_update_timer = QtCore.QTimer()
+    status_update_timer.timeout.connect(lambda: update_controls(memory_bar))
+    status_update_timer.start(1000)
+    item = QtGui.QTreeWidgetItem(['memory used'])
+    params_tree.addTopLevelItem(item)
+    params_tree.setItemWidget(item, 1, memory_bar)
 
     pm = ParamManager(area, params_tree, config)
 

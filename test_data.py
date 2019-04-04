@@ -21,7 +21,19 @@ def send_data(host, port):
                 'bravo': np.sin(2 * np.pi * 0.14 * t) + random.random() / 10.0,
                 'charlie': random.random() < 0.0002,
                 'delta': random.random(),
-                'echo': np.sin(2 * np.pi * 0.2 * t)
+                'echo': np.sin(2 * np.pi * 0.2 * t),
+                'noise1': random.random(),
+                'noise2': random.random(),
+                'noise3': random.random(),
+                'noise4': random.random(),
+                'noise5': random.random(),
+                'noise6': random.random(),
+                'noise7': random.random(),
+                'noise8': random.random(),
+                'noise9': random.random(),
+                'noise10': random.random(),
+                'noise11': random.random(),
+                'noise12': random.random(),
             }
 
             b = json.dumps(data) + '\n'
