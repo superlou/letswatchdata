@@ -139,11 +139,13 @@ class ParamManager:
 def update_gui(rx_queue, pm):
     while not rx_queue.empty():
         msg = rx_queue.get()
+        rx_queue.task_done()
 
         params = [(msg['t'], k) for k, v in msg.items() if k != 't']
 
         for param in params:
             pm.update(param[1], param[0], msg[param[1]])
+
 
 
 def put_memory_in_tree(tree_widget):
