@@ -136,16 +136,18 @@ class ParamManager:
                     curve.parent.addItem(arrow)
 
 
-def update_gui(rx_queue, pm):
+def update_gui(rx_queue, pm, app_state):
     while not rx_queue.empty():
         msg = rx_queue.get()
         rx_queue.task_done()
 
         params = [(msg['t'], k) for k, v in msg.items() if k != 't']
 
+        if app_state['accept_data'] == False:
+            continue
+
         for param in params:
             pm.update(param[1], param[0], msg[param[1]])
-
 
 
 def put_memory_in_tree(tree_widget):
@@ -165,6 +167,20 @@ def put_memory_in_tree(tree_widget):
     return update_memory
 
 
+def put_accept_data_in_tree(tree_widget, on_accept_data_changed):
+    accept_checkbox = QtGui.QCheckBox()
+    accept_checkbox.setChecked(True)
+
+    def on_state_changed(state):
+        on_accept_data_changed(accept_checkbox.isChecked())
+
+    accept_checkbox.stateChanged.connect(on_state_changed)
+
+    item = QtGui.QTreeWidgetItem(['accept data'])
+    tree_widget.addTopLevelItem(item)
+    tree_widget.setItemWidget(item, 1, accept_checkbox)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('config', help="Configuration JSON file")
@@ -177,6 +193,13 @@ def main():
         return
 
     rx_queue = Queue()
+
+    app_state = {
+        'accept_data': True
+    }
+
+    def on_accept_data_changed(value):
+        app_state['accept_data'] = value
 
     args = ('127.0.0.1', 65432, rx_queue)
     socket_thread = threading.Thread(target=socket_listener, args=args)
@@ -198,6 +221,7 @@ def main():
     params_tree.setColumnCount(2)
     params_tree_dock.addWidget(params_tree)
 
+    put_accept_data_in_tree(params_tree, on_accept_data_changed)
     update_memory_fn = put_memory_in_tree(params_tree)
     memory_update_timer = QtCore.QTimer()
     memory_update_timer.timeout.connect(update_memory_fn)
@@ -206,7 +230,7 @@ def main():
     pm = ParamManager(area, params_tree, config)
 
     timer = QtCore.QTimer()
-    timer.timeout.connect(lambda: update_gui(rx_queue, pm))
+    timer.timeout.connect(lambda: update_gui(rx_queue, pm, app_state))
     timer.start(30)
 
     win.show()
