@@ -146,9 +146,21 @@ def update_gui(rx_queue, pm):
             pm.update(param[1], param[0], msg[param[1]])
 
 
-def update_controls(memory_bar):
-    memory = psutil.virtual_memory()
-    memory_bar.setValue(memory.percent)
+def put_memory_in_tree(tree_widget):
+    memory_bar = QtGui.QProgressBar()
+    memory_bar.setGeometry(0, 0, 300, 25)
+    memory_bar.setMaximum(100)
+    memory_bar.setValue(0)
+
+    item = QtGui.QTreeWidgetItem(['memory used'])
+    tree_widget.addTopLevelItem(item)
+    tree_widget.setItemWidget(item, 1, memory_bar)
+
+    def update_memory():
+        memory = psutil.virtual_memory()
+        memory_bar.setValue(memory.percent)
+
+    return update_memory
 
 
 def main():
@@ -184,17 +196,10 @@ def main():
     params_tree.setColumnCount(2)
     params_tree_dock.addWidget(params_tree)
 
-
-    memory_bar = QtGui.QProgressBar()
-    memory_bar.setGeometry(0, 0, 300, 25)
-    memory_bar.setMaximum(100)
-    memory_bar.setValue(0)
-    status_update_timer = QtCore.QTimer()
-    status_update_timer.timeout.connect(lambda: update_controls(memory_bar))
-    status_update_timer.start(1000)
-    item = QtGui.QTreeWidgetItem(['memory used'])
-    params_tree.addTopLevelItem(item)
-    params_tree.setItemWidget(item, 1, memory_bar)
+    update_memory_fn = put_memory_in_tree(params_tree)
+    memory_update_timer = QtCore.QTimer()
+    memory_update_timer.timeout.connect(update_memory_fn)
+    memory_update_timer.start(1000)
 
     pm = ParamManager(area, params_tree, config)
 
